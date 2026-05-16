@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth.routes');
 const villageRoutes = require('./routes/village.routes');
 const familyRoutes = require('./routes/family.routes');
 const memberRoutes = require('./routes/member.routes');
+const { initCron } = require('./services/cron.service');
 
 const app = express();
 
@@ -43,6 +44,9 @@ app.listen(PORT, () => {
   console.log(`🚀 Village Directory API running on port ${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Health check: http://localhost:${PORT}/health`);
+  
+  // Initialize scheduled tasks
+  initCron();
 });
 
 module.exports = app;

@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const { ApiError } = require('../utils/ApiError');
 const { getPagination, buildMeta } = require('../utils/pagination');
+const { formatMember } = require('./member.service');
 
 const buildFamilyWhere = (query, user) => {
   const villageId = user.role === 'SUPER_ADMIN' ? query.village_id : user.village_id;
@@ -57,14 +58,19 @@ const searchFamilies = async (query, user) => {
       take: limit,
       include: {
         village: { select: { id: true, name: true } },
-        members: { select: { id: true, name: true, relation: true } },
+        members: true,
         _count: { select: { members: true } },
       },
     }),
     prisma.family.count({ where }),
   ]);
 
-  return { families, meta: buildMeta(total, page, limit) };
+  const formattedFamilies = families.map(f => ({
+    ...f,
+    members: f.members.map(formatMember)
+  }));
+
+  return { families: formattedFamilies, meta: buildMeta(total, page, limit) };
 };
 
 const getFamily = async (id, user) => {
@@ -81,6 +87,7 @@ const getFamily = async (id, user) => {
     throw ApiError.forbidden('Access denied');
   }
 
+  family.members = family.members.map(formatMember);
   return family;
 };
 
@@ -96,7 +103,7 @@ const createFamily = async (data, photoUrl, userId) => {
 
 const updateFamily = async (id, data, photoUrl, user) => {
   await getFamily(id, user);
-  return prisma.family.update({
+  const family = await prisma.family.update({
     where: { id },
     data: {
       ...data,
@@ -107,6 +114,8 @@ const updateFamily = async (id, data, photoUrl, user) => {
       members: true,
     },
   });
+  family.members = family.members.map(formatMember);
+  return family;
 };
 
 const deleteFamily = async (id, user) => {

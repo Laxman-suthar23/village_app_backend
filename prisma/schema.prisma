@@ -12,6 +12,21 @@ enum Role {
   VILLAGE_ADMIN
 }
 
+enum EducationType {
+  SCHOOL
+  COLLEGE
+  GRADUATED
+  WORKING
+  BUSINESS
+  OTHER
+}
+
+enum EducationStatus {
+  STUDYING
+  COMPLETED
+  DROPPED
+}
+
 model User {
   id         String   @id @default(uuid())
   name       String
@@ -58,13 +73,18 @@ model Family {
 }
 
 model Member {
-  id         String  @id @default(uuid())
-  family_id  String
-  name       String
-  relation   String?
-  age        Int?
-  education  String?
-  occupation String?
+  id                     String           @id @default(uuid())
+  family_id              String
+  name                   String
+  relation               String?
+  date_of_birth          DateTime
+  occupation             String?
+  education_type         EducationType    @default(OTHER)
+  education_status       EducationStatus  @default(COMPLETED)
+  current_standard       Int?
+  academic_year          Int?
+  school_or_college_name String?
+  degree                 String?
 
   family Family @relation(fields: [family_id], references: [id], onDelete: Cascade)
 

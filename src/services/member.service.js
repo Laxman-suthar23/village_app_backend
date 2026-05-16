@@ -1,5 +1,16 @@
 const prisma = require('../config/prisma');
 const { ApiError } = require('../utils/ApiError');
+const { calculateAge } = require('../utils/age');
+const { formatEducation } = require('../utils/education');
+
+const formatMember = (member) => {
+  if (!member) return null;
+  return {
+    ...member,
+    age: calculateAge(member.date_of_birth),
+    education_display: formatEducation(member),
+  };
+};
 
 const getMemberWithAccess = async (id, user) => {
   const member = await prisma.member.findUnique({
@@ -12,7 +23,7 @@ const getMemberWithAccess = async (id, user) => {
     throw ApiError.forbidden('Access denied');
   }
 
-  return member;
+  return formatMember(member);
 };
 
 const createMember = async (data, user) => {
@@ -23,12 +34,24 @@ const createMember = async (data, user) => {
     throw ApiError.forbidden('Access denied');
   }
 
-  return prisma.member.create({ data });
+  // Ensure date_of_birth is a Date object
+  if (data.date_of_birth) {
+    data.date_of_birth = new Date(data.date_of_birth);
+  }
+
+  const member = await prisma.member.create({ data });
+  return formatMember(member);
 };
 
 const updateMember = async (id, data, user) => {
   await getMemberWithAccess(id, user);
-  return prisma.member.update({ where: { id }, data });
+  
+  if (data.date_of_birth) {
+    data.date_of_birth = new Date(data.date_of_birth);
+  }
+
+  const member = await prisma.member.update({ where: { id }, data });
+  return formatMember(member);
 };
 
 const deleteMember = async (id, user) => {
@@ -36,4 +59,4 @@ const deleteMember = async (id, user) => {
   await prisma.member.delete({ where: { id } });
 };
 
-module.exports = { createMember, updateMember, deleteMember };
+module.exports = { createMember, updateMember, deleteMember, formatMember };

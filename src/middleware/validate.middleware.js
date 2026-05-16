@@ -53,17 +53,74 @@ const memberRules = [
   body('name').trim().notEmpty().withMessage('Member name is required')
     .isLength({ max: 100 }),
   body('relation').optional().trim().isLength({ max: 50 }),
-  body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Invalid age'),
-  body('education').optional().trim().isLength({ max: 100 }),
+  body('date_of_birth').notEmpty().withMessage('Date of birth is required')
+    .isISO8601().withMessage('Invalid date format (YYYY-MM-DD)')
+    .custom((value) => {
+      if (new Date(value) > new Date()) {
+        throw new Error('Date of birth cannot be in the future');
+      }
+      return true;
+    }),
   body('occupation').optional().trim().isLength({ max: 100 }),
+  body('education_type').optional().isIn(['SCHOOL', 'COLLEGE', 'GRADUATED', 'WORKING', 'BUSINESS', 'OTHER'])
+    .withMessage('Invalid education type'),
+  body('education_status').optional().isIn(['STUDYING', 'COMPLETED', 'DROPPED'])
+    .withMessage('Invalid education status'),
+  body('current_standard').optional().isInt({ min: 1, max: 12 })
+    .custom((value, { req }) => {
+      if (value && req.body.education_type !== 'SCHOOL') {
+        throw new Error('Current standard is only allowed for SCHOOL type');
+      }
+      return true;
+    }),
+  body('academic_year').optional({ nullable: true }).isInt({ min: 1900, max: 2100 })
+    .withMessage('Invalid academic year'),
+  body('academic_year').custom((value, { req }) => {
+    if (req.body.education_type === 'SCHOOL' && req.body.education_status === 'STUDYING' && !value) {
+      throw new Error('Academic year is required for SCHOOL students');
+    }
+    return true;
+  }),
+  body('school_or_college_name').optional().trim().isLength({ max: 200 }),
+  body('degree').optional().trim().isLength({ max: 100 })
+    .custom((value, { req }) => {
+      if (value && !['COLLEGE', 'GRADUATED'].includes(req.body.education_type)) {
+        throw new Error('Degree is only allowed for COLLEGE or GRADUATED type');
+      }
+      return true;
+    }),
 ];
 
 const memberUpdateRules = [
   body('name').optional().trim().notEmpty().isLength({ max: 100 }),
   body('relation').optional().trim().isLength({ max: 50 }),
-  body('age').optional().isInt({ min: 0, max: 150 }).withMessage('Invalid age'),
-  body('education').optional().trim().isLength({ max: 100 }),
+  body('date_of_birth').optional().isISO8601().withMessage('Invalid date format')
+    .custom((value) => {
+      if (value && new Date(value) > new Date()) {
+        throw new Error('Date of birth cannot be in the future');
+      }
+      return true;
+    }),
   body('occupation').optional().trim().isLength({ max: 100 }),
+  body('education_type').optional().isIn(['SCHOOL', 'COLLEGE', 'GRADUATED', 'WORKING', 'BUSINESS', 'OTHER']),
+  body('education_status').optional().isIn(['STUDYING', 'COMPLETED', 'DROPPED']),
+  body('current_standard').optional().isInt({ min: 1, max: 12 })
+    .custom((value, { req }) => {
+      if (value && req.body.education_type && req.body.education_type !== 'SCHOOL') {
+        throw new Error('Current standard is only allowed for SCHOOL type');
+      }
+      return true;
+    }),
+  body('academic_year').optional({ nullable: true }).isInt({ min: 1900, max: 2100 })
+    .withMessage('Invalid academic year'),
+  body('school_or_college_name').optional().trim().isLength({ max: 200 }),
+  body('degree').optional().trim().isLength({ max: 100 })
+    .custom((value, { req }) => {
+      if (value && req.body.education_type && !['COLLEGE', 'GRADUATED'].includes(req.body.education_type)) {
+        throw new Error('Degree is only allowed for COLLEGE or GRADUATED type');
+      }
+      return true;
+    }),
 ];
 
 // ─── Village Admin Creation ───────────────────────────────────────────────────
