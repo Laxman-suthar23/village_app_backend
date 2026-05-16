@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  VILLAGE_ADMIN
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  mobile     String   @unique
+  password   String
+  role       Role     @default(VILLAGE_ADMIN)
+  village_id String?
+  created_at DateTime @default(now())
+
+  village Village? @relation(fields: [village_id], references: [id], onDelete: SetNull)
+
+  @@map("users")
+}
+
+model Village {
+  id          String   @id @default(uuid())
+  name        String
+  cover_image String?
+  description String?
+  created_at  DateTime @default(now())
+
+  users    User[]
+  families Family[]
+
+  @@map("villages")
+}
+
+model Family {
+  id          String   @id @default(uuid())
+  village_id  String
+  head_name   String
+  father_name String?
+  mobile      String?
+  gotra       String?
+  address     String?
+  photo       String?
+  created_by  String?
+  created_at  DateTime @default(now())
+
+  village Village  @relation(fields: [village_id], references: [id], onDelete: Cascade)
+  members Member[]
+
+  @@map("families")
+}
+
+model Member {
+  id         String  @id @default(uuid())
+  family_id  String
+  name       String
+  relation   String?
+  age        Int?
+  education  String?
+  occupation String?
+
+  family Family @relation(fields: [family_id], references: [id], onDelete: Cascade)
+
+  @@map("members")
+}
